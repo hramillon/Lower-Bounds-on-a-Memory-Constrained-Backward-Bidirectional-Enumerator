@@ -18,8 +18,6 @@ import math
 class RecursiveCheckpointEnumerator:
     """
     Hierarchical recursive checkpoint management.
-    
-    Maintains k checkpoints where checkpoint j tracks position in n_{k-j}(i) sequence.
     """
     
     def __init__(self, n: int, k: int):
@@ -28,13 +26,10 @@ class RecursiveCheckpointEnumerator:
         self.pos = 0
         self.ops = 0
         
-        # Precompute n_m(i) sequences for m = 1..k
         self.n_sequences = {}
         for m in range(1, k + 1):
             self.n_sequences[m] = self._compute_n_sequence(m)
-        
-        # Checkpoint indices: checkpoints[j] tells us which index we're at
-        # in the n_{k-j}(i) sequence
+
         self.checkpoint_indices = [0] * k
     
     def _binomial(self, n, k):
@@ -52,9 +47,8 @@ class RecursiveCheckpointEnumerator:
     def _compute_n_sequence(self, m: int) -> list:
         """
         Compute n_m(i) = C(m+i-1, m) for i = 0, 1, 2, ...
-        Returns list up to sum >= self.n
         """
-        seq = [0]  # n_m(0) = 0
+        seq = [0]
         i = 1
         total = 0
         while total <= self.n:
@@ -72,7 +66,7 @@ class RecursiveCheckpointEnumerator:
         """
         total = 0
         for j in range(self.k):
-            m = self.k - j  # Sequence index for checkpoint j
+            m = self.k - j
             idx = self.checkpoint_indices[j]
             total += self.n_sequences[m][idx]
         return total
@@ -90,8 +84,6 @@ class RecursiveCheckpointEnumerator:
             m = self.k - j
             seq = self.n_sequences[m]
             
-            # Find which index we're at in this sequence
-            # We need: seq[i] <= pos_at_level < seq[i+1]
             idx = 0
             for i in range(len(seq)):
                 if seq[i] <= pos_at_level:
@@ -101,7 +93,6 @@ class RecursiveCheckpointEnumerator:
             
             self.checkpoint_indices[j] = idx
             
-            # Update pos_at_level for next checkpoint
             if idx < len(seq):
                 pos_at_level -= seq[idx]
     
@@ -125,10 +116,8 @@ class RecursiveCheckpointEnumerator:
         target = self.pos - 1
         
         # Find nearest checkpoint before current position
-        # This is a bit tricky: we need the previous valid checkpoint state
         prev_checkpoints = self.checkpoint_indices[:]
         
-        # Move one step back
         # Decrement from the deepest level that can decrement
         can_decrement = False
         for j in range(self.k - 1, -1, -1):
@@ -150,13 +139,11 @@ class RecursiveCheckpointEnumerator:
             return True
         
         # Calculate cost: distance to nearest previous checkpoint
-        # Reconstruct prev checkpoint position
         prev_pos = 0
         for j in range(self.k):
             m = self.k - j
             prev_pos += self.n_sequences[m][prev_checkpoints[j]]
         
-        # Cost to traverse from prev checkpoint to target
         cost = target - prev_pos if target >= prev_pos else 0
         self.ops += cost
         

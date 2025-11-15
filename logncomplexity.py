@@ -10,17 +10,14 @@ class HierarchicalBinaryTree:
     
     def __init__(self, n: int):
         self.n = n
-        # Generate all levels: powers of 2, then midpoints at each level
         self.levels = self._build_levels()
     
     def _build_levels(self) -> dict:
         """
         Build checkpoint positions organized by depth/level.
-        levels[d] = list of positions at depth d (in order)
         """
         levels = {}
         
-        # Level 0: powers of 2
         level_0 = []
         p = 1
         while p <= self.n:
@@ -66,8 +63,6 @@ class HierarchicalBinaryTree:
 
 class ProperLogNEnumerator:
     """
-    Correct implementation with proper checkpoint management.
-    
     Maintain exactly k checkpoints using hierarchical tree descent/ascent.
     """
     
@@ -95,10 +90,7 @@ class ProperLogNEnumerator:
     def _get_next_checkpoint_forward(self, current_pos: int) -> int:
         """
         Get the next checkpoint to add when moving forward from current_pos.
-        
-        Strategy: find the deepest checkpoint > current_pos
         """
-        # Find all positions > current_pos
         all_positions = sorted(set(
             pos for d in self.tree.levels.values() for pos in d
         ))
@@ -112,10 +104,6 @@ class ProperLogNEnumerator:
     def next(self) -> bool:
         """
         Move forward: pos += 1, manage checkpoints.
-        
-        Strategy:
-        - When moving into a new depth level, ADD that checkpoint
-        - If memory full, REMOVE the oldest (lowest depth) checkpoint
         """
         if self.pos >= self.n:
             return False
@@ -146,9 +134,6 @@ class ProperLogNEnumerator:
     def prev(self) -> bool:
         """
         Move backward: apply inverse of forward checkpoint strategy.
-        
-        When we remove a checkpoint during backward, cost is: distance from
-        removed checkpoint to next saved checkpoint.
         """
         if self.pos <= 0:
             return False
@@ -163,25 +148,17 @@ class ProperLogNEnumerator:
         target = self.pos - 1
         positions_up_to_target = [p for p in all_positions if p <= target]
         
-        # If we're losing checkpoints (going to shallower depth)
         if len(positions_up_to_target) < len(self.checkpoints):
             # Find which checkpoint we're about to drop
             removed_cp = self.checkpoints[-1]
             
             # Cost: recompute from next saved checkpoint to removed checkpoint
-            # Actually: we just removed it, so cost is distance we need to traverse
-            # The cost manifests when we later need it again
-            
-            # Remove it from memory (inverse of forward)
             if len(self.checkpoints) > 0:
                 self.checkpoints.pop()
                 
-                # Cost: we had to traverse from removed_cp to where we are now
-                # Since we're going backward, this is included in the backward steps
                 cost_to_restore = removed_cp - target
                 self.ops += cost_to_restore
         else:
-            # Normal backward step
             cost = 1
             self.ops += cost
         
