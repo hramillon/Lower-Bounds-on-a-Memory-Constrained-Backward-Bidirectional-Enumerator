@@ -1,4 +1,4 @@
-# Lower Bounds on a Memory-Constrained Backward Bidirectional Enumerator
+# Lower Bounds on a Memory-Constrained Bidirectional Enumerator
 
 ## Table of Contents
 
