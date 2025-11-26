@@ -286,7 +286,7 @@ Therefore \(l = 1\) for all \(k\).
 
 When representing the recursion as a graph (for example \(T(6,2)\)), the last three vertices after the anchor form a subproblem of size \(T(3,1)\):
 
-\begin{tikzpicture}[scale=0.4]
+\begin{tikzpicture}
   \GraphInit[vstyle=Normal]
   \SetGraphUnit{3}
   \SetVertexNoLabel
@@ -745,13 +745,15 @@ at every power of two arising from recursively subdividing the intervals
 between two consecutive powers of two.  
 The resulting hierarchy of anchors can be represented as a binary tree.
 
+\begin{center} % centre tout le tikzpicture sur la page
 \begin{tikzpicture}[
   level distance=1cm,
   sibling distance=1cm,
   every node/.style={circle, draw, minimum size=0.3cm, font=\small}
 ]
 
-% First tree
+% Premier arbre
+\begin{scope}[shift={(-3cm,0)}] % décalage à gauche
 \node {2}
   child { node {4}
     child { node {6} }
@@ -763,9 +765,11 @@ The resulting hierarchy of anchors can be represented as a binary tree.
       }
     }
   };
+\end{scope}
 
-% Second tree (positioned to the right)
-\node[xshift=5cm] {2}
+% Deuxième arbre
+\begin{scope}[shift={(3cm,0)}] % décalage à droite
+\node {2}
   child { node {4}
     child { node {6} }
     child { node {8} 
@@ -777,8 +781,11 @@ The resulting hierarchy of anchors can be represented as a binary tree.
       child { node {16} }
     }
   };
+\end{scope}
 
 \end{tikzpicture}
+\end{center}
+
 These trees have a recursive depth of~$2$: the powers of two appear at 
 level~$0$; the subdivisions of $8$ into $10$ and $12$ form level~$1$; and 
 the subdivisions of $12$ into $14$ and $16$ form level~$2$.
