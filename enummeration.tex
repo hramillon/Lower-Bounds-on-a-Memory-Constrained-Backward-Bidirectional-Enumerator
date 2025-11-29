@@ -917,20 +917,15 @@ T(n, k) = \min_{1 \le x \le n} \left( x + T(x - 1, k) + T(n - x, k - 1) \right).
 \]
 This recurrence, $T(n, k)$, revealed a rich internal structure. By focusing on instances where the minimizing split point is unique, we uncovered several structural relationships—some of which were formally demonstrated and discussed throughout this article. These relationships provide significant insight into the behavior and progression of the recursion:
 \begin{align*}
-x_k(i+1) &= n_k(i), \\
-x_k(i) - n_k(i) - 1 &= n_{k-1}(i), \\
-x_k(i+1) &= x_k(i) + x_{k-1}(i), \\
-T(n_k(i), k) &= k \times \binom{k + i}{k + 1}.
+T(n_k(i), k) = k\times \binom{i + k - 1}{k+1} + i.
 \end{align*}
 
 Furthermore, these relationships allowed us to establish lower bounds on the cost function under three different memory regimes: $\Theta(1)$, $\Theta(n)$, and $\Theta(\log n)$. We proved that the corresponding time complexities are respectively
 \[
-\Omega\left(n^{1 + \frac{1}{k}}\right), \quad \Omega(n), \quad \text{and} \quad \Omega(n \log n).
+\Theta\left(n^{1 + \frac{1}{k}}\right), \quad \Theta(n), \quad \text{and} \quad \Theta(n \log n).
 \]
 
-Finally, we proposed algorithms that approach these bounds, suggesting that our lower bounds are tight—or nearly tight—in practice. These algorithms were inspired by prior work on checkpointing and external memory by Gerth St{\o}lting Brodal and Rolf Fagerberg \cite{brodal1999kk}, by Jeffrey Scott Vitter \cite{vitter1999external}, and by backtracking mechanisms developed by Jean-Christophe Filli{\^a}tre \cite{filliatre2006backtracking}.
-
-In addition, we provided a straightforward proof for an upper bound of $\mathcal{O}(n^2)$, which complements the lower bounds and further validates the tightness of our complexity analysis.
+Finally, we proposed algorithms that approach these bounds, suggesting that our lower bounds are tight—or nearly tight—in practice.
 
 \paragraph{Availability}
 The code is available at:
