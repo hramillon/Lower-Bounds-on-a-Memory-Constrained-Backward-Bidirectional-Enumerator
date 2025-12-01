@@ -27,8 +27,8 @@ class RecursiveCheckpointEnumerator:
         self.ops = 0
         
         self.n_sequences = {}
-        for m in range(1, k + 1):
-            self.n_sequences[m] = self._compute_n_sequence(m)
+        for m in range(0, k):
+            self.n_sequences[k-m] = self._compute_n_sequence(k-m)
 
         self.checkpoint_indices = [0] * k
     
@@ -48,13 +48,17 @@ class RecursiveCheckpointEnumerator:
         """
         Compute n_m(i) = C(m+i-1, m) for i = 0, 1, 2, ...
         """
-        seq = [0]
+        seq = []
         i = 1
-        total = 0
-        while total <= self.n:
+        val = 0
+        if m == self.k :
+            limit = self.n
+        else:
+            length = len(self.n_sequences[m+1])
+            limit = self.n_sequences[m+1][length-1] - self.n_sequences[m+1][length-2] - 1
+        while val < limit:
             val = self._binomial(m + i - 1, m)
             seq.append(val)
-            total += val
             i += 1
         return seq
     
@@ -80,21 +84,39 @@ class RecursiveCheckpointEnumerator:
         """
         pos_at_level = self.pos
         
+        
         for j in range(self.k):
             m = self.k - j
             seq = self.n_sequences[m]
             
             idx = 0
-            for i in range(len(seq)):
+            if self.checkpoint_indices[j] == 0 :
+                start = 0
+            else :
+                start = self.checkpoint_indices[j]-1
+            for i in range(start, len(seq)+1):
                 if seq[i] <= pos_at_level:
                     idx = i
                 else:
                     break
-            
+            if self.checkpoint_indices[j] != idx:
+                lower_anchor=0
+                for jj in range(self.k):
+                    m_prev = self.k - jj
+                    seq_prev = self.n_sequences[m_prev]
+                    idx_prev = self.checkpoint_indices[jj]
+                    
+                    candidate = seq_prev[idx_prev]
+                    if candidate < seq[idx] and candidate > lower_anchor:
+                        lower_anchor = candidate
+                
+                cost = seq[idx] - lower_anchor
+                self.ops += cost
             self.checkpoint_indices[j] = idx
             
             if idx < len(seq):
                 pos_at_level -= seq[idx]
+            
     
     def next(self) -> bool:
         """Move forward one position."""
@@ -134,7 +156,6 @@ class RecursiveCheckpointEnumerator:
         if not can_decrement:
             # All checkpoints at 0, can only go to 0
             self.pos = 0
-            self.ops += 1
             self.checkpoint_indices = [0] * self.k
             return True
         
@@ -190,12 +211,12 @@ if __name__ == "__main__":
     print("=" * 120)
     print()
     
-    for k in range(100,101):
+    for k in range(10,11):
         print(f"\n{'='*120}")
         print(f"k = {k} memory cells")
         print(f"{'='*120}")
         
-        for n in [32, 128, 512, 2048]:
+        for n in [32, 128, 512, 2048,4096]:
             enum = RecursiveCheckpointEnumerator(n, k)
             enum.run_full_cycle()
             m = enum.get_metrics()
