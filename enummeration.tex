@@ -35,7 +35,7 @@
 \begin{document}
 
     \title{Lower Bounds on a Memory-Constrained Bidirectional Enumerator}
-    \author{Ramillon Hugo}
+    \author{Ramillon Hugo, Michael Raskin}
     \date{}
     \maketitle
 
@@ -286,7 +286,7 @@ Therefore \(l = 1\) for all \(k\).
  Graphical interpretation
 
 When representing the recursion as a graph (for example \(T(6,2)\)), the last three vertices after the anchor form a subproblem of size \(T(3,1)\):
-
+\begin{center}
 \begin{tikzpicture}
   \GraphInit[vstyle=Normal]
   \SetGraphUnit{3}
@@ -327,9 +327,10 @@ When representing the recursion as a graph (for example \(T(6,2)\)), the last th
   \tikzset{EdgeStyle/.style={->,>=stealth}}
   \Edge(V5)(V6)
 \end{tikzpicture}
-
+\end{center}
 Representation of \(T(3,1)\):
 
+\begin{center}
 \begin{tikzpicture}[scale=0.86]
   \GraphInit[vstyle=Normal]
   \SetGraphUnit{3}
@@ -351,7 +352,7 @@ Representation of \(T(3,1)\):
   \tikzset{EdgeStyle/.style={->,>=stealth}}
   \Edge(V2)(V3)
 \end{tikzpicture}
-
+\end{center}
 Recalling the recurrence
 \[
 T(n,k) = \min_{1 \le x \le n} \left( x + T(x-1, k) + T(n-x, k-1) \right),
@@ -604,9 +605,9 @@ n_{\log n}(i) = \binom{\log n + i - 1}{\log n},
 \]
 solving asymptotically for \( i \) in terms of \( n \) gives
 \[
-n \sim \frac{(\log n + i)^{\log n}}{(\log n)!}
+n_{log n}(i) \sim \frac{ i^{\log n}}{(\log n)!}
 \quad \Longrightarrow \quad
-i \sim \big( (\log n)! \cdot n \big)^{\frac{1}{\log n}} - \log n.
+i^{log n} \sim log(n)! n
 \]
 
 Using Stirling’s approximation,
@@ -615,7 +616,7 @@ Using Stirling’s approximation,
 \]
 we get
 \[
-i = \Theta\!\left( \big( n \cdot (\log n)^{\log n} \big)^{\frac{1}{\log n}} \right)
+i \sim \Theta((log n)^{\frac{log n}{log n}} \times n^{\frac{1}{log n}})
   = \Theta\!\left( n^{\frac{1}{\log n}} \cdot \log n \right).
 \]
 
@@ -628,10 +629,6 @@ we conclude
 i = \Theta(\log n).
 \]
 
-\paragraph{Choosing the precise constant.} Let \(i = c^* \log n\) where \(c^* \approx 0.5422\) solves
-\[
-(1+c^*)\ln(1+c^*) - c^* \ln c^* = 1.
-\]
 Then \(n_{\log n}(i) = \Theta(n)\).
 
 \paragraph{Asymptotic evaluation of \(T(n_{\log n}(i), \log n)\).} Using the recurrence,
@@ -647,63 +644,25 @@ Hence, using \(\Theta(\log n)\) memory, the cost satisfies
 T(n, \Theta(\log n)) = \Theta(n \log n),
 \]
 
-We have no a lower bound for $\theta(log(n))$
+We now have a lower bound for $\Theta(log(n))$
 \section{Algorithms Which Approach Our Theoretical Bounds}
 
-\subsection{Algorithm for $\theta(n)$ \cite{filliatre2006backtracking}}
+\subsection{Algorithm for $\Theta(n)$~\cite{filliatre2006backtracking}}
 
-This algorithm saves every position during forward traversal, enabling exact backward steps in constant time per operation.
+This algorithm stores every position during the forward traversal, allowing
+exact backward steps in constant time per operation.
 
-\paragraph{Data Structures:} It maintains:
+\paragraph{Data Structures.} The algorithm maintains:
 \begin{itemize}
-    \item \texttt{current}: current enumerator state
-    \item \texttt{distance}: distance from start
-    \item \texttt{saved\_positions}: stack of previous positions
+    \item \texttt{current}: the current enumerator state;
+    \item \texttt{distance}: the distance from the start;
+    \item \texttt{saved\_positions}: a stack of previously visited positions.
 \end{itemize}
 
-\paragraph{Initialization}
-\begin{minted}[fontsize=\small, linenos=false, frame=single,breaklines]{python}
-def __init__(self, start_iterator, n):
-    self.n = n
-    self.current = start_iterator
-    self.saved_positions = []
-    self.distance = 0
-\end{minted}
+The algorithm is straightforward. During the forward traversal, each visited
+state is pushed onto the stack. During the backward traversal, states are
+popped from the stack to restore the previous position.
 
-\paragraph{Forward Movement}
-\begin{minted}[fontsize=\small, linenos=false, frame=single,breaklines]{python}
-def next(self):
-    self.distance += 1
-    self.saved_positions.append(self.current
-    .clone())
-    self.current.next()
-\end{minted}
-
-\texttt{next} increments distance, saves the state, and advances the iterator. The underlying \texttt{current.next()} is defined externally:
-
-\begin{minted}[fontsize=\small, linenos=false, frame=single,breaklines]{python}
-def next(self):
-    CountingIterator.operation_count += 1
-    self.pos += 1
-\end{minted}
-
-\paragraph{Backward Movement}
-\begin{minted}[fontsize=\small, linenos=false, frame=single,breaklines]{python}
-def prev(self):
-    if not self.saved_positions:
-        raise ValueError("No saved positions")
-    self.distance -= 1
-    self.saved_positions.pop()
-    self.current.prev()
-\end{minted}
-
-\texttt{prev} checks for saved states, pops the last, and moves backward. The underlying \texttt{current.prev()}:
-
-\begin{minted}[fontsize=\small, linenos=false, frame=single,breaklines]{python}
-def prev(self):
-    CountingIterator.operation_count += 1
-    self.pos -= 1
-\end{minted}
 
 \textbf{Time Complexity:} $\mathcal{O}(n)$ total, $\mathcal{O}(1)$ per operation, using $\mathcal{O}(n)$ space.
 
@@ -725,132 +684,146 @@ $1600$ & $1600$ & $1600$ & $1.000$ \\
 \end{table}
 
 
-\subsection{Algorithm for $\theta(\log n)$ }
 
-We maintain sparse checkpoints at distances that are powers of two 
-($1,2,4,8,\ldots$), which allows efficient reconstruction.  
-However, this structure alone can be problematic, since a large number of 
-elements may lie between two consecutive powers of two, for example 
-between $256$ and $512$.
+\subsection{Algorithm for $\Theta(\log n)$ Memory}
 
-A natural idea is to subdivide the interval between two such powers by 
-placing additional anchors.  
-Returning to our example, the distance between $256$ and $512$ is $256$, 
-and given our anchor set, the natural way to subdivide it is again using 
-powers of two.  
-We can then recursively apply the same idea between intermediate points, 
-such as between $384 = 256 + 128$ and $512$.
+We now describe a bidirectional enumeration algorithm that operates with
+$\Theta(\log n)$ memory and achieves a total cost of $\Theta(n \log n)$,
+matching the lower bound established in Section~4.3 up to constant factors.
 
-In summary, our algorithm places anchors at every power of two, as well as 
-at every power of two arising from recursively subdividing the intervals 
-between two consecutive powers of two.  
-The resulting hierarchy of anchors can be represented as a binary tree.
+\paragraph{High-level intuition.}
+Since the target time complexity is $\Theta(n \log n)$, it is natural to organize
+the enumeration around a hierarchical structure reminiscent of a binary tree.
+Conceptually, we consider an implicit tree whose root corresponds to position~$0$.
+For each node at position $x$, the left child corresponds to the next power of two
+greater than $x$, while the right child corresponds to $x$ plus the smallest
+unused power of two. Iterating this construction yields a tree that spans all even
+positions and reflects the exponential spacing inherent to powers of two.
 
-\begin{center} % centre tout le tikzpicture sur la page
+However, maintaining checkpoints only at positions $1,2,4,8,\ldots$ is insufficient
+in practice. Indeed, the gap between two consecutive powers of two may be large
+(e.g., between $256$ and $512$), leading to excessive recomputation during backward
+steps.
+
+\paragraph{Checkpoint spacing strategy.}
+To address this issue, the algorithm dynamically maintains a set of
+well-spaced checkpoints during the forward traversal.
+First, an anchor is added systematically at every position that is a power of two;
+this operation takes $\Theta(1)$ time and guarantees a logarithmic upper bound on
+the number of anchors.
+
+In addition, the algorithm maintains two auxiliary quantities:
+\begin{itemize}
+  \item the \emph{marginal distance}, defined as the distance between the current
+  position and the most recently placed checkpoint;
+  \item the \emph{minimum inter-checkpoint distance}, i.e., the smallest distance
+  between any two consecutive checkpoints currently stored.
+\end{itemize}
+Both quantities can be updated in $\Theta(1)$ time, since checkpoints are introduced
+at powers of two and only local adjustments are required.
+
+Whenever the marginal distance exceeds the minimum inter-checkpoint distance,
+the algorithm removes the checkpoint corresponding to the largest index realizing
+this minimum distance and replaces it with a new checkpoint at the current position.
+This replacement rule guarantees that checkpoints remain evenly distributed along
+the traversal, preventing the formation of large gaps.
+
+\paragraph{Backward traversal.}
+During backward enumeration, two cases arise.
+If the current position is not a checkpoint, the algorithm recomputes the previous
+state starting from the most recent checkpoint.
+If the current position coincides with a checkpoint, the algorithm recomputes an
+optimal set of checkpoints by inserting new ones at midpoints between the current
+position and earlier checkpoints along the path. Conceptually, the current checkpoint
+is removed, and the algorithm attempts to reinsert checkpoints so as to preserve the
+spacing invariant.
+
+If no position is available between two consecutive checkpoints, the algorithm
+recursively searches earlier intervals. When no further insertion is possible,
+the anchor corresponding to the root is discarded. At this stage, the number of
+remaining elements is bounded by $O(\log n)$, and the remaining backward traversal
+can be completed with negligible additional cost.
+
+\paragraph{Complexity analysis.}
+At all times, the algorithm stores at most $\Theta(\log n)$ checkpoints.
+Each forward step performs only constant-time maintenance operations, while each
+backward step triggers at most $\Theta(\log n)$ recomputation in the worst case.
+Summed over the entire execution, this yields a total cost of $\Theta(n \log n)$,
+in accordance with the theoretical lower bound for $\Theta(\log n)$ memory.
+
+\begin{center}
 \begin{tikzpicture}[
+  level 1/.style={sibling distance=10mm},
+  level 2/.style={sibling distance=10mm},
+  level 3/.style={sibling distance=18mm},
+  level 4/.style={sibling distance=10mm},
   level distance=1cm,
   sibling distance=1cm,
-  every node/.style={circle, draw, minimum size=0.3cm, font=\small}
+  every node/.style={circle, draw, minimum size=0.2cm, font=\small},
+  leaf/.style={fill=gray!20}
 ]
 
-% Premier arbre
-\begin{scope}[shift={(-3cm,0)}] % décalage à gauche
-\node {2}
-  child { node {4}
-    child { node {6} }
-    child { node {8} 
-      child { node {10} 
-        child { node {12} 
-          child { node {14} }
+\node {0}
+  child{
+      node[leaf]{L}
+    }
+  child {
+    node {2}
+    child{
+      node[leaf]{L}
+    }
+    child {
+      node {4}
+      child {  node{6} 
+        child{node[leaf]{L}}
+        child{node[leaf]{L}}
+      }
+      child {
+        node {8}
+        child {
+          node {10}
+          child {
+            node{12}
+            child{
+              node[leaf]{L}
+            }
+            child { node {14}
+                child{node[leaf]{L}}
+                child{node[leaf]{L}}
+            }
+          }
+          child{
+              node[leaf]{L}
+            }
         }
+        child{
+              node[leaf]{L}
+            }
       }
     }
   };
-\end{scope}
-
-% Deuxième arbre
-\begin{scope}[shift={(3cm,0)}] % décalage à droite
-\node {2}
-  child { node {4}
-    child { node {6} }
-    child { node {8} 
-      child { node {10} 
-        child { node {12} 
-          child { node {14} }
-        }
-      }
-      child { node {16} }
-    }
-  };
-\end{scope}
 
 \end{tikzpicture}
 \end{center}
 
-These trees have a recursive depth of~$2$: the powers of two appear at 
-level~$0$; the subdivisions of $8$ into $10$ and $12$ form level~$1$; and 
-the subdivisions of $12$ into $14$ and $16$ form level~$2$.
-
-However, we only have $O(\log n)$ memory, i.e.\ enough to store the anchors 
-along a single branch obtained by always following the right child from the 
-root, since these nodes correspond to powers of two.
-
-I propose several rules to keep the appropriate anchors in the tree.  
-The algorithm is implemented in Python, and a link to the code is provided 
-at the end of the paper.
-
-First, note that the distance between $0$ and the next power of two is 
-precisely that power of two.  
-Since our memory is limited to the size of the branch obtained by repeatedly 
-going right, the number of anchors at depth~$1$ in the recursion (i.e.\ 
-children of a given level-$0$ node) equals the logarithm of the corresponding 
-power of two minus~$1$:
-\[
-\lvert [2,4,8] \rvert \;=\; \lvert [8,10,12] \rvert.
-\]
-From this, we derive a rule for preserving the most useful anchors for 
-performing the enumeration at any moment.
-
-During the upward phase of the enumeration, if the cursor lies between two 
-powers of two, we keep the earlier power of two for as long as possible.  
-For example:
-\[
-[4,6,8] \;\Rightarrow\; [4,8,10] \;\Rightarrow\; [8,10,12].
-\]
-In general, as long as the anchor lies in the ``mid'' region between two 
-powers of two, we always remove the anchor closest to the preceding power 
-of two.
-
-The following example would not actually occur yet, because we have not 
-explained the rule for depth~$k$, though it follows the same principle:
-\[
-[8,10,12,16] \;\Rightarrow\; [8,12,16,18]
-            \;\Rightarrow\; [8,16,18,20].
-\]
-
-At depth~$k$, we simply treat level $k-1$ as if it were level~$0$ and apply 
-the same rules recursively:
-\[
-[16,18,20,22] \;\Rightarrow\; [16,18,20,24]
-              \;\Rightarrow\; [16,20,24,26].
-\]
 
 \begin{table}[H]
 \centering
-\caption{Experimental values of the cost for several $(n,k)$ pairs.}
+\caption{Experimental values of the cost for several $n$.}
 \label{tab:experimental-values}
 \medskip
-\begin{tabular}{c|c|c|c|c}
+\begin{tabular}{c c c c c}
 \toprule
-$n$ & $k$ & Operations & Theoretical bound & Ratio \\
+$n$ & $\log_2(n)$ & Operations & Theoretical bound & Ratio \\
 \midrule
-$16$  & $4$ & $80$   & $64$   & $1.250$ \\
-$64$  & $6$ & $476$  & $384$  & $1.240$ \\
-$256$ & $8$ & $2496$ & $2048$ & $1.219$ \\
-$4096$  & $12$ & $56822$  & $48828$  & $1.164$ \\
+$128$  & $7$  & $223$  & $896$   & $0.249$ \\
+$256$  & $8$  & $601$  & $2048$  & $0.293$ \\
+$1024$ & $10$ & $2658$ & $10240$ & $0.260$ \\
+$2048$ & $11$ & $6678$ & $22528$ & $0.296$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
 
 
 \subsection{Algorithm for $\Theta(1)$}
