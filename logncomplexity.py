@@ -1,112 +1,96 @@
 import math
 
-class LogNEnumerator:
-    
+class logenumerator:
     def __init__(self, n: int):
         self.n = n
-        
         self.pos = 0
         self.ops = 0
+        # On utilise un dictionnaire pour stocker les checkpoints par niveau
+        # pour simuler l'accès mémoire. Clé = niveau k, Valeur = position
+        self.checkpoints = {0: 0} 
         
-        #next indice to remove in forward pass
-        self.next_rmv= 1
-        #smaller gap between two checkpoints
-        self.smaller_size= 2
-        #distance between last checkpoint and position
-        self.marginal_dist=0
+    def _update_checkpoints(self):
+        """
+        La logique de Raskin : pour chaque niveau k, 
+        on garde le marqueur correspondant à pos sans ses k derniers bits.
+        """
+        # Le nombre de niveaux nécessaires est log2(n)
+        max_level = math.ceil(math.log2(self.n)) if self.n > 0 else 1
         
-        # Current checkpoints in memory
-        self.check=0
-        self.checkpoints = [0]
-        
-        # Direction: True = forward, False = backward
-        self.direction = True
-    
-    def computer_rmv(self):
-        self.checkpoints.pop(self.next_rmv)
-        
-        if(self.next_rmv == self.check):
-            return (1,self.checkpoints[1] -self.checkpoints[0])
-        elif(self.next_rmv == self.check -1):
-            return(self.check, self.checkpoints[self.next_rmv] -self.checkpoints[self.next_rmv-1])
-        elif(self.checkpoints[self.next_rmv] -self.checkpoints[self.next_rmv-1] == self.checkpoints[self.next_rmv +1] -self.checkpoints[self.next_rmv]):
-            return (self.next_rmv,self.checkpoints[self.next_rmv] -self.checkpoints[self.next_rmv-1])
-        return (self.next_rmv+1,self.checkpoints[self.next_rmv+1] -self.checkpoints[self.next_rmv])
-    
+        new_checks = {0: 0} # Le début est toujours là
+        for k in range(1, max_level + 1):
+            # Position du marqueur de niveau k pour la position actuelle
+            marker_pos = self.pos & ~((1 << k) - 1)
+            new_checks[k] = marker_pos
+            
+        # On simule le coût de recomputation si un nouveau checkpoint 
+        # doit être créé à partir d'un ancien.
+        # Dans le modèle Raskin, on ne recule jamais "dans le vide"
+        self.checkpoints = new_checks
+
     def next(self) -> bool:
-        self.pos+=1
-        self.ops+=1
-        self.marginal_dist+=1
-        if ((self.pos & (self.pos - 1)) == 0 and self.pos != 1):
-            self.checkpoints.append(self.pos)
-            self.check+=1
-            self.marginal_dist=0
-        if self.marginal_dist >= self.smaller_size:
-            (self.next_rmv,self.smaller_size) = self.computer_rmv()
-            self.checkpoints.append(self.pos)
-            self.marginal_dist=0
-        if(self.pos < self.n):
-            return True
-        return False
-    
-    def compute_checks(self):
-        #we check if there is a room for a checpoint between intervals
-        free_room_start = len(self.checkpoints)-2
-        free_room_end =len(self.checkpoints)-1
-        
-        index_replace = free_room_end
-        while(free_room_end != 0):
-            if(self.checkpoints[free_room_end] - self.checkpoints[free_room_start] > 1):
-                self.checkpoints.insert(index_replace,self.checkpoints[free_room_start] + ((self.checkpoints[free_room_end] - self.checkpoints[free_room_start])//2))
-                self.ops+= ((self.checkpoints[free_room_end] - self.checkpoints[free_room_start])//2)
-                break
-            else:
-                free_room_start-=1
-                free_room_end-=1
-                index_replace-=1
-        #If there is no more place we remove the unnecessaries checkpoints
-        self.check-=1
-        
-    
-    def prev(self) -> bool:
-        if(self.pos == self.checkpoints[-1]):
-            self.compute_checks()
-            self.checkpoints.pop()
-            self.pos-=1
-        else:
-            self.pos-=1
-            self.ops+= (self.pos - self.checkpoints[-1])
+        if self.pos >= self.n:
+            return False
+        self.pos += 1
+        self.ops += 1
+        self._update_checkpoints()
         return True
-                
-    
-    def run_full_cycle(self):
+
+    def prev(self) -> bool:
+        if self.pos <= 0:
+            return False
         
+        target = self.pos - 1
+        
+        # Trouver le checkpoint le plus proche derrière la cible
+        # (Dans l'algo de Raskin, il y en a toujours un très proche)
+        closest_check = 0
+        for cp in self.checkpoints.values():
+            if cp <= target:
+                closest_check = max(closest_check, cp)
+        
+        # Coût pour reconstruire l'état depuis le checkpoint
+        self.ops += (target - closest_check)
+        
+        self.pos = target
+        self._update_checkpoints()
+        return True
+
+    def run_full_cycle(self):
+        # Aller jusqu'au bout
         while self.next():
             pass
+        # Revenir au début
         while self.pos > 0:
             self.prev()
-        self.ops -= math.ceil(math.log2(self.n))
-    
+
     def get_metrics(self):
         n_logn = math.ceil(self.n * math.log2(self.n))
         return {
             'n': self.n,
             'ops': self.ops,
             'n_logn': n_logn,
-            'ratio': self.ops / n_logn if n_logn > 0 else 0,
-            'checkpoints_in_mem': len(self.checkpoints),
+            'ratio_logn': self.ops / n_logn if n_logn > 0 else 0,
+            'ratio_n': self.ops / self.n if self.n > 0 else 0,
+            'mem': len(set(self.checkpoints.values())),
         }
-
-
-if __name__ == "__main__":
-    print("=" * 90)
-    print("HIERARCHICAL TREE WITH PROPER FORWARD/BACKWARD")
-    print("=" * 90)
-    print()
     
-    for n in [128,256,1024,2048]:
-        enum = LogNEnumerator(n)
-        
+if __name__ == "__main__":
+    header = f"{'n':>8} | {'Ops/n':>10} | {'Ops/(n log n)':>15} | {'Ops/(n log log n)':>18}"
+    print(header)
+    print("-" * len(header))
+    
+    for i in range(7, 16): # n de 128 à 32768
+        n = 2**i
+        enum = logenumerator(n)
         enum.run_full_cycle()
-        m = enum.get_metrics()
-        print(f"ops={m['ops']:8d}, n×log(n)={m['n_logn']:6d}, ratio={m['ratio']:7.3f}")
+        
+        ops = enum.ops
+        log_n = math.log2(n)
+        log_log_n = math.log2(log_n) if log_n > 0 else 1
+        
+        r_n = ops / n
+        r_logn = ops / (n * log_n)
+        r_loglogn = ops / (n * log_log_n)
+        
+        print(f"{n:8d} | {r_n:10.3f} | {r_logn:15.3f} | {r_loglogn:18.3f}")
