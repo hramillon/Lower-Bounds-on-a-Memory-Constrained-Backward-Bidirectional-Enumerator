@@ -387,7 +387,7 @@ T(n_k(i+1), k) = T(n_k(i), k) + T(n_k(i+1)-n_k(i), k-1).
 However, after using all our anchors, we cannot compute the second term without redoing the entire walk. Therefore, a correction term \(n_k(i)\) must be added:
 \[
 \begin{aligned}
-T(n_k(i+1), k) = T(n_k(i), k) + T(n_k(i+1)-n_k(i), k-1)&  // + n_k(i).
+T(n_k(i+1), k) = T(n_k(i), k) + T(n_k(i+1)-n_k(i), k-1)&  / + n_k(i).
 \end{aligned}
 \]
 Since we already have an anchor at position \(n_k(i)\), we can optimize the first term:
@@ -521,7 +521,7 @@ to denote that \( f(n) \) is asymptotically equivalent to \( g(n) \), that is,
 This means that \( f(n) \) and \( g(n) \) grow at the same rate as \( n \to \infty \).
 
 
-\subsection{Lower Bound for \( \theta(1) \) Memory}
+\subsection{Lower Bound for \( O(1) \) Memory}
 
 We seek to establish a lower bound on the cost function \( T(n, k) \), which represents the number of forward steps performed by a bidirectional enumerator operating with \( k \) memory cells. Our approach is to analyze a structured recursive strategy that models the behavior of such an enumerator under memory constraints. This structured strategy, while idealized, provides a tractable framework from which we can derive a lower bounds.
 
@@ -584,7 +584,7 @@ Therefore, we conclude:
 T(n_k(i), k) \in \theta\left(n^{1 + \frac{1}{k}}\right).
 \]
 
-\subsection{Lower bound for \( \theta(n) \)}
+\subsection{Lower bound for \( O(n) \)}
 This one is obvious
 \ref{eq:recurrence1}
 \[
@@ -592,7 +592,7 @@ T(n, n) = 1 + T(0,n) + T(n-1,n-1) = \sum_{k=1}^{n} 1 = n,
 \]
 we have \( \theta(n) \) time complexity.
 
-\subsection{Lower Bound for \( \theta(\log n) \) Memory}
+\subsection{Lower Bound for \( O(\log n) \) Memory}
 
 Based on the recursive definition of \( T(n,k) \), we consider the case \( k = \log n \). 
 For some integer \( i \), we have
@@ -634,29 +634,27 @@ Then \(n_{\log n}(i) = \Theta(n)\).
 
 \paragraph{Asymptotic evaluation of \(T(n_{\log n}(i), \log n)\).} 
 Using the recurrence relation and the previously derived relation \(i = \Theta(\log n)\) for \(n_{\log n}(i) = \Theta(n)\), we evaluate the total cost:
+
+\begin{aligned}
+T(n_{\log n}(i), \log n)
+  &= log(n) \binom{i + log(n) - 1}{log(n) + 1} + i \\
+  &= log(n)  \frac{i-1}{log(n) +1}  \binom{i + log(n) - 1}{log(n)} + i\\
+  &= log(n)  \frac{i-1}{log(n) +1}  n_{k}(i) + i\\
+\end{aligned}
+
+Substituting the asymptotic orders knowing that $\frac{i-1}{log(n) + 1}$ tends to $1$ since $\theta(i) = log(n)$:
 \[
-T(n_{\log n}(i), \log n) = n_{\log n}(i) \cdot \frac{\log n + i - 1}{\log n - 1} + i
-\]
-Substituting the asymptotic orders:
-\[
-T(n, \log n) = \Theta(n) \cdot \frac{\Theta(\log n) + \Theta(\log n)}{\Theta(\log n)} + \Theta(\log n) = \Theta(n \cdot 1 + \log n) = \Theta(n).
+T(n_{log(n)}(i), \log n) = log(n) \Theta(n) + \Theta(\log n) = \Theta(nlogn()).
 \]
 Hence, under this formal recurrence model, using \(\Theta(\log n)\) memory, the theoretical lower bound satisfies:
 \[
-T(n, \Theta(\log n)) = \Theta(n).
+T(n, \Theta(\log n)) = \Theta(nlog(n)).
 \]
-
-This result aligns with the foundational work of Griewank \cite{griewank1992achieving}, who first demonstrated that the recomputation overhead for reversing sequential processes could be kept proportional to the total number of steps, provided that the memory grows logarithmically.
-
-\paragraph{Discussion on Quasi-Linearity.}
-While the closed-form evaluation of the recurrence leads to a linear bound \(\Theta(n)\), this result warrants a critical interpretation. Reaching perfect linearity in a bidirectional enumerator with only logarithmic memory implies an extremely efficient amortized redistribution of checkpoints. In practice, the density of checkpoints must be high enough near the cursor to bound recomputation costs, but the discrete nature of the movements often introduces a slight overhead. 
-
-Thus we propose that the actual complexity of such algorithms is more accurately described as \(\Theta(n \cdot \alpha(n))\), where \(\alpha(n)\) is a very slowly growing function .
 
 We now have a robust framework for the \(\Theta(\log n)\) memory.
 \section{Algorithms Which Approach Our Theoretical Bounds}
 
-\subsection{Algorithm for $\Theta(n)$~\cite{filliatre2006backtracking}}
+\subsection{Algorithm for $O(n)$~\cite{filliatre2006backtracking}}
 
 This algorithm stores every position during the forward traversal, allowing
 exact backward steps in constant time per operation.
@@ -692,7 +690,7 @@ $1600$ & $1600$ & $1600$ & $1.000$ \\
 \end{tabular}
 \end{table}
 
-\subsection{Algorithms for \(\Theta(\log n)\) Memory}
+\subsection{Algorithms for \(O(\log n)\) Memory}
 
 The logarithmic memory regime represents a critical trade-off where the amortized cost of operations can be reduced significantly below the trivial hierarchical bounds. We propose an algorithm based on a deterministic, binary-aligned checkpointing strategy that minimizes recomputation by exploiting the bit-representation of the sequence indices.
 
@@ -739,7 +737,7 @@ This linear growth of the ratio with respect to \(\log_2 n\) allows for a precis
 \alpha(n) = \log_4(n) = \frac{1}{2} \log_2(n)
 \]
 To characterize this "quasi-linear" behavior, we draw a methodological parallel with the analysis of Tarjan~\cite{tarjan1975efficiency}, who demonstrated that dynamic maintenance in data structures (such as path compression in Union-Find) can lead to complexities governed by extremely slow-growing functions. In our case, the deterministic redistribution of anchors effectively maintains a near-constant recomputation distance for practical values of \(n\), bridging the gap between the \(\Theta(n)\) idealized lower bound and the traditional \(\Theta(n \log_2 n)\) models.
-\subsection{Algorithm for $\Theta(1)$}
+\subsection{Algorithm for $O(1)$}
 
 In this section, we briefly recall the idea behind the $\Theta(1)$-space bidirectional enumeration algorithm.  
 \medskip
